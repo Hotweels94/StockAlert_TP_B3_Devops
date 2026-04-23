@@ -9,15 +9,26 @@ const DEFAULT_THRESHOLD = parseInt(process.env.DEFAULT_THRESHOLD || "10");
 
 // ── DONNÉES EN MÉMOIRE ───────────────────────────────────────────────
 const products = new Map([
-  ["prod-001", { id: "prod-001", name: "Laptop Pro 15",       stock: 3,  threshold: 5  }],
-  ["prod-002", { id: "prod-002", name: "Mechanical Keyboard", stock: 12, threshold: 10 }],
-  ["prod-003", { id: "prod-003", name: "USB-C Hub",           stock: 0,  threshold: 5  }],
-  ["prod-004", { id: "prod-004", name: "Monitor 27 pouces",   stock: 8,  threshold: 10 }],
+  [
+    "prod-001",
+    { id: "prod-001", name: "Laptop Pro 15", stock: 3, threshold: 5 },
+  ],
+  [
+    "prod-002",
+    { id: "prod-002", name: "Mechanical Keyboard", stock: 12, threshold: 10 },
+  ],
+  ["prod-003", { id: "prod-003", name: "USB-C Hub", stock: 0, threshold: 5 }],
+  [
+    "prod-004",
+    { id: "prod-004", name: "Monitor 27 pouces", stock: 8, threshold: 10 },
+  ],
 ]);
 
 const alerts = new Map();
 
-function genId() { return crypto.randomBytes(4).toString("hex"); }
+function genId() {
+  return crypto.randomBytes(4).toString("hex");
+}
 
 function checkAndAlert(product) {
   if (product.stock < product.threshold) {
@@ -30,7 +41,7 @@ function checkAndAlert(product) {
       threshold: product.threshold,
       severity: product.stock === 0 ? "critical" : "warning",
       createdAt: new Date().toISOString(),
-      resolved: false
+      resolved: false,
     };
     alerts.set(id, alert);
     return alert;
@@ -41,7 +52,7 @@ function checkAndAlert(product) {
 // Résoudre automatiquement les alertes actives d'un produit
 // quand son stock repasse au-dessus du seuil
 function resolveAlertsForProduct(productId) {
-  alerts.forEach(function(alert) {
+  alerts.forEach(function (alert) {
     if (alert.productId === productId && !alert.resolved) {
       alert.resolved = true;
       alert.resolvedAt = new Date().toISOString();
@@ -49,16 +60,19 @@ function resolveAlertsForProduct(productId) {
   });
 }
 
-products.forEach(p => checkAndAlert(p));
+products.forEach((p) => checkAndAlert(p));
 
 // ── UTILITAIRES ──────────────────────────────────────────────────────
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", c => (body += c));
+    req.on("data", (c) => (body += c));
     req.on("end", () => {
-      try { resolve(body ? JSON.parse(body) : {}); }
-      catch { reject(new Error("JSON invalide")); }
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
+        reject(new Error("JSON invalide"));
+      }
     });
   });
 }
@@ -70,7 +84,7 @@ function json(res, status, data) {
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "X-App-Version": APP_VERSION,
-    "X-App-Env": APP_ENV
+    "X-App-Env": APP_ENV,
   });
   res.end(JSON.stringify(data, null, 2));
 }
@@ -78,16 +92,21 @@ function json(res, status, data) {
 function getAlertStats() {
   const all = Array.from(alerts.values());
   return {
-    total:    all.length,
-    active:   all.filter(a => !a.resolved).length,
-    critical: all.filter(a => a.severity === "critical" && !a.resolved).length,
-    warning:  all.filter(a => a.severity === "warning"  && !a.resolved).length,
-    resolved: all.filter(a =>  a.resolved).length
+    total: all.length,
+    active: all.filter((a) => !a.resolved).length,
+    critical: all.filter((a) => a.severity === "critical" && !a.resolved)
+      .length,
+    warning: all.filter((a) => a.severity === "warning" && !a.resolved).length,
+    resolved: all.filter((a) => a.resolved).length,
   };
 }
 
-function isValidStock(n)    { return Number.isInteger(n) && n >= 0; }
-function isValidSeverity(s) { return ["critical", "warning"].includes(s); }
+function isValidStock(n) {
+  return Number.isInteger(n) && n >= 0;
+}
+function isValidSeverity(s) {
+  return ["critical", "warning"].includes(s);
+}
 
 // ── INTERFACE WEB ────────────────────────────────────────────────────
 // Le JS embarqué utilise UNIQUEMENT des guillemets simples
@@ -445,7 +464,7 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type"
+      "Access-Control-Allow-Headers": "Content-Type",
     });
     res.end();
     return;
@@ -460,12 +479,21 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && url === "/health") {
-    json(res, 200, { status: "ok", env: APP_ENV, version: APP_VERSION, products: products.size, alerts: getAlertStats() });
+    json(res, 200, {
+      status: "ok",
+      env: APP_ENV,
+      version: APP_VERSION,
+      products: products.size,
+      alerts: getAlertStats(),
+    });
     return;
   }
 
   if (req.method === "GET" && url === "/products") {
-    const list = Array.from(products.values()).map(p => ({ ...p, belowThreshold: p.stock < p.threshold }));
+    const list = Array.from(products.values()).map((p) => ({
+      ...p,
+      belowThreshold: p.stock < p.threshold,
+    }));
     json(res, 200, { total: list.length, products: list });
     return;
   }
@@ -473,14 +501,27 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "POST" && url === "/products") {
     try {
       const { name, stock, threshold } = await parseBody(req);
-      if (!name?.trim())       { json(res, 400, { error: "name est requis" }); return; }
-      if (!isValidStock(stock)){ json(res, 400, { error: "stock doit etre un entier >= 0" }); return; }
+      if (!name?.trim()) {
+        json(res, 400, { error: "name est requis" });
+        return;
+      }
+      if (!isValidStock(stock)) {
+        json(res, 400, { error: "stock doit etre un entier >= 0" });
+        return;
+      }
       const id = "prod-" + genId();
-      const product = { id, name: name.trim(), stock, threshold: threshold ?? DEFAULT_THRESHOLD };
+      const product = {
+        id,
+        name: name.trim(),
+        stock,
+        threshold: threshold ?? DEFAULT_THRESHOLD,
+      };
       products.set(id, product);
       const alert = checkAndAlert(product);
       json(res, 201, { product, alertCreated: alert !== null });
-    } catch (e) { json(res, 400, { error: e.message }); }
+    } catch (e) {
+      json(res, 400, { error: e.message });
+    }
     return;
   }
 
@@ -488,9 +529,15 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "PATCH" && stockMatch) {
     try {
       const product = products.get(stockMatch[1]);
-      if (!product) { json(res, 404, { error: "Produit introuvable" }); return; }
+      if (!product) {
+        json(res, 404, { error: "Produit introuvable" });
+        return;
+      }
       const { stock } = await parseBody(req);
-      if (!isValidStock(stock)) { json(res, 400, { error: "stock doit etre un entier >= 0" }); return; }
+      if (!isValidStock(stock)) {
+        json(res, 400, { error: "stock doit etre un entier >= 0" });
+        return;
+      }
       product.stock = stock;
       // Si le stock repasse au-dessus du seuil → résoudre les alertes actives
       if (product.stock >= product.threshold) {
@@ -498,18 +545,22 @@ const server = http.createServer(async (req, res) => {
       }
       const alert = checkAndAlert(product);
       json(res, 200, { product, alertCreated: alert !== null });
-    } catch (e) { json(res, 400, { error: e.message }); }
+    } catch (e) {
+      json(res, 400, { error: e.message });
+    }
     return;
   }
 
   if (req.method === "GET" && url === "/alerts") {
-    const list = Array.from(alerts.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const list = Array.from(alerts.values()).sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    );
     json(res, 200, { ...getAlertStats(), alerts: list });
     return;
   }
 
   if (req.method === "GET" && url === "/alerts/active") {
-    const active = Array.from(alerts.values()).filter(a => !a.resolved);
+    const active = Array.from(alerts.values()).filter((a) => !a.resolved);
     json(res, 200, { total: active.length, alerts: active });
     return;
   }
@@ -517,7 +568,10 @@ const server = http.createServer(async (req, res) => {
   const resolveMatch = url.match(/^\/alerts\/([^/]+)\/resolve$/);
   if (req.method === "PATCH" && resolveMatch) {
     const alert = alerts.get(resolveMatch[1]);
-    if (!alert) { json(res, 404, { error: "Alerte introuvable" }); return; }
+    if (!alert) {
+      json(res, 404, { error: "Alerte introuvable" });
+      return;
+    }
     alert.resolved = true;
     alert.resolvedAt = new Date().toISOString();
     json(res, 200, { alert });
@@ -526,7 +580,10 @@ const server = http.createServer(async (req, res) => {
 
   const alertMatch = url.match(/^\/alerts\/([^/]+)$/);
   if (req.method === "DELETE" && alertMatch) {
-    if (!alerts.has(alertMatch[1])) { json(res, 404, { error: "Alerte introuvable" }); return; }
+    if (!alerts.has(alertMatch[1])) {
+      json(res, 404, { error: "Alerte introuvable" });
+      return;
+    }
     alerts.delete(alertMatch[1]);
     json(res, 200, { message: "Alerte supprimee" });
     return;
@@ -536,8 +593,25 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log("StockAlert — env: " + APP_ENV + ", version: " + APP_VERSION + ", port: " + PORT);
+  console.log(
+    "StockAlert — env: " +
+      APP_ENV +
+      ", version: " +
+      APP_VERSION +
+      ", port: " +
+      PORT,
+  );
   console.log("Interface   : http://localhost:" + PORT);
 });
+console.log("coucou");
 
-module.exports = { server, products, alerts, genId, checkAndAlert, isValidSeverity, isValidStock, getAlertStats };
+module.exports = {
+  server,
+  products,
+  alerts,
+  genId,
+  checkAndAlert,
+  isValidSeverity,
+  isValidStock,
+  getAlertStats,
+};

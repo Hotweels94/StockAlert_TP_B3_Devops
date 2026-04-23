@@ -26,7 +26,7 @@ function test(desc, fn) {
 function expect(val) {
   return {
     toBe: (exp) => {
-      if (val === exp) throw new Error(`Attendu "${exp}", reçu "${val}"`); // BROKEN TEST TO TEST
+      if (val !== exp) throw new Error(`Attendu "${exp}", reçu "${val}"`);
     },
     toEqual: (exp) => {
       if (JSON.stringify(val) !== JSON.stringify(exp))

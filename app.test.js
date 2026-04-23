@@ -1,28 +1,62 @@
 // app.test.js — tests unitaires StockAlert
 const {
-  products, alerts, genId,
-  checkAndAlert, isValidSeverity, isValidStock, getAlertStats
+  products,
+  alerts,
+  genId,
+  checkAndAlert,
+  isValidSeverity,
+  isValidStock,
+  getAlertStats,
 } = require("./app");
 
 let passed = 0;
 let failed = 0;
 
 function test(desc, fn) {
-  try { fn(); console.log(`  ✅ ${desc}`); passed++; }
-  catch (e) { console.log(`  ❌ ${desc}\n     → ${e.message}`); failed++; }
+  try {
+    fn();
+    console.log(`  ✅ ${desc}`);
+    passed++;
+  } catch (e) {
+    console.log(`  ❌ ${desc}\n     → ${e.message}`);
+    failed++;
+  }
 }
 
 function expect(val) {
   return {
-    toBe: (exp) => { if (val !== exp) throw new Error(`Attendu "${exp}", reçu "${val}"`); },
-    toEqual: (exp) => { if (JSON.stringify(val) !== JSON.stringify(exp)) throw new Error(`Attendu ${JSON.stringify(exp)}, reçu ${JSON.stringify(val)}`); },
-    toBeGreaterThan: (n) => { if (val <= n) throw new Error(`Attendu > ${n}, reçu ${val}`); },
-    toBeGreaterThanOrEqual: (n) => { if (val < n) throw new Error(`Attendu >= ${n}, reçu ${val}`); },
-    toBeTruthy: () => { if (!val) throw new Error(`Attendu truthy, reçu "${val}"`); },
-    toBeFalsy: () => { if (val) throw new Error(`Attendu falsy, reçu "${val}"`); },
-    toBeNull: () => { if (val !== null) throw new Error(`Attendu null, reçu "${val}"`); },
-    toMatch: (re) => { if (!re.test(String(val))) throw new Error(`"${val}" ne correspond pas à ${re}`); },
-    toContain: (s) => { if (!String(val).includes(s)) throw new Error(`"${val}" ne contient pas "${s}"`); },
+    toBe: (exp) => {
+      if (val === exp) throw new Error(`Attendu "${exp}", reçu "${val}"`); // BROKEN TEST TO TEST
+    },
+    toEqual: (exp) => {
+      if (JSON.stringify(val) !== JSON.stringify(exp))
+        throw new Error(
+          `Attendu ${JSON.stringify(exp)}, reçu ${JSON.stringify(val)}`,
+        );
+    },
+    toBeGreaterThan: (n) => {
+      if (val <= n) throw new Error(`Attendu > ${n}, reçu ${val}`);
+    },
+    toBeGreaterThanOrEqual: (n) => {
+      if (val < n) throw new Error(`Attendu >= ${n}, reçu ${val}`);
+    },
+    toBeTruthy: () => {
+      if (!val) throw new Error(`Attendu truthy, reçu "${val}"`);
+    },
+    toBeFalsy: () => {
+      if (val) throw new Error(`Attendu falsy, reçu "${val}"`);
+    },
+    toBeNull: () => {
+      if (val !== null) throw new Error(`Attendu null, reçu "${val}"`);
+    },
+    toMatch: (re) => {
+      if (!re.test(String(val)))
+        throw new Error(`"${val}" ne correspond pas à ${re}`);
+    },
+    toContain: (s) => {
+      if (!String(val).includes(s))
+        throw new Error(`"${val}" ne contient pas "${s}"`);
+    },
   };
 }
 
@@ -94,7 +128,12 @@ test("refuse une chaîne vide", () => {
 console.log("\ncheckAndAlert :");
 
 test("crée une alerte 'critical' si stock = 0", () => {
-  const product = { id: "test-001", name: "Test Product", stock: 0, threshold: 5 };
+  const product = {
+    id: "test-001",
+    name: "Test Product",
+    stock: 0,
+    threshold: 5,
+  };
   const alert = checkAndAlert(product);
   expect(alert).toBeTruthy();
   expect(alert.severity).toBe("critical");
@@ -104,7 +143,12 @@ test("crée une alerte 'critical' si stock = 0", () => {
 });
 
 test("crée une alerte 'warning' si stock < threshold", () => {
-  const product = { id: "test-002", name: "Test Product 2", stock: 3, threshold: 5 };
+  const product = {
+    id: "test-002",
+    name: "Test Product 2",
+    stock: 3,
+    threshold: 5,
+  };
   const alert = checkAndAlert(product);
   expect(alert).toBeTruthy();
   expect(alert.severity).toBe("warning");
@@ -113,7 +157,12 @@ test("crée une alerte 'warning' si stock < threshold", () => {
 });
 
 test("ne crée pas d'alerte si stock >= threshold", () => {
-  const product = { id: "test-003", name: "Test Product 3", stock: 10, threshold: 5 };
+  const product = {
+    id: "test-003",
+    name: "Test Product 3",
+    stock: 10,
+    threshold: 5,
+  };
   const alert = checkAndAlert(product);
   expect(alert).toBeNull();
 });
@@ -158,8 +207,13 @@ test("4 produits sont chargés au démarrage", () => {
 });
 
 test("chaque produit a les propriétés requises", () => {
-  products.forEach(p => {
-    if (!p.id || !p.name || p.stock === undefined || p.threshold === undefined) {
+  products.forEach((p) => {
+    if (
+      !p.id ||
+      !p.name ||
+      p.stock === undefined ||
+      p.threshold === undefined
+    ) {
       throw new Error(`Produit incomplet : ${JSON.stringify(p)}`);
     }
   });
@@ -172,5 +226,9 @@ test("des alertes sont générées au démarrage pour les produits sous le seuil
 
 // ── RÉSULTAT ─────────────────────────────────────────────────────────
 console.log(`\n📊 ${passed} passés, ${failed} échoués\n`);
-if (failed > 0) { console.log("❌ Pipeline bloqué.\n"); process.exit(1); }
-console.log("✅ Tous les tests passent.\n"); process.exit(0);
+if (failed > 0) {
+  console.log("❌ Pipeline bloqué.\n");
+  process.exit(1);
+}
+console.log("✅ Tous les tests passent.\n");
+process.exit(0);

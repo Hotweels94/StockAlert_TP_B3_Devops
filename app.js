@@ -604,7 +604,7 @@ server.listen(PORT, () => {
   console.log("Interface   : http://localhost:" + PORT);
 });
 
-console.log("test");
+console.log("coucou");
 
 module.exports = {
   server,
